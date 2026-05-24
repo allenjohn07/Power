@@ -98,12 +98,13 @@ export default function MapPage() {
   return (
     <AppShell>
       <div className="flex min-h-0 flex-1 flex-col">
-        <header className="border-b border-border px-4 pt-4 pb-3">
+        <header className="border-b border-border bg-background/95 px-4 pt-4 pb-3 backdrop-blur supports-[backdrop-filter]:bg-background/90">
           <h1 className="text-xl font-semibold tracking-tight text-foreground md:hidden">
-            Main Campus Map
+            Campus map
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            {totalPlugs} plug{totalPlugs === 1 ? "" : "s"} on campus
+            {totalPlugs} plug{totalPlugs === 1 ? "" : "s"} · tap a building to
+            explore
           </p>
           <BuildingPicker
             buildings={buildings}

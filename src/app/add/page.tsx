@@ -14,6 +14,7 @@ import {
 import { RoomCodeAutofill } from "@/components/RoomCodeAutofill";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
+import { cn, sectionLabelClass } from "@/lib/utils";
 import { useCurrentBuilding } from "@/hooks/useCurrentBuilding";
 import { MAX_PLUG_PHOTOS } from "@/lib/plug-images";
 
@@ -155,12 +156,12 @@ export default function AddPlugPage() {
   return (
     <AppShell>
       <div className="flex min-h-0 flex-1 flex-col">
-      <header className="border-b border-border px-4 pt-4 pb-3">
+      <header className="border-b border-border bg-background/95 px-4 pt-4 pb-3 backdrop-blur supports-[backdrop-filter]:bg-background/90">
         <Link
           href="/"
           className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="size-4" />
           Back to feed
         </Link>
         <h1 className="mt-2 text-xl font-semibold tracking-tight text-foreground">
@@ -178,7 +179,8 @@ export default function AddPlugPage() {
       </header>
 
       <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
-        <form onSubmit={submitNewPlugPoint} className="flex flex-col gap-5">
+        <form onSubmit={submitNewPlugPoint} className="flex flex-col gap-6">
+          <p className={sectionLabelClass()}>Location</p>
           {error && (
             <p
               role="alert"
@@ -274,10 +276,11 @@ export default function AddPlugPage() {
               value={exactLocation}
               onChange={(e) => setExactLocation(e.target.value)}
               placeholder="e.g. Behind the vending machine near room CA416"
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex min-h-[88px] w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </label>
 
+          <p className={cn(sectionLabelClass(), "-mb-2")}>Evidence</p>
           <MultiPhotoUpload
             photos={photos}
             uploading={uploading}
@@ -288,7 +291,7 @@ export default function AddPlugPage() {
           <Button
             type="submit"
             disabled={submitting || uploading || !buildingId || !floor}
-            className="min-h-11 w-full rounded-xl bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
+            className="min-h-11 w-full rounded-full bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
           >
             {submitting ? "Submitting…" : "Submit plug"}
           </Button>

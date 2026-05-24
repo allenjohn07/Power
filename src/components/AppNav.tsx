@@ -3,7 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { LayoutGroup, motion } from "framer-motion";
 import { LayoutGrid, Map, Trophy, User } from "lucide-react";
+import { springs } from "@/lib/springs";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -34,36 +36,56 @@ function NavLink({
   active: boolean;
   layout: "mobile" | "desktop";
 }) {
+  if (layout === "mobile") {
+    return (
+      <Link href={href} className="flex min-h-12 flex-1 flex-col items-center justify-center">
+        <motion.div
+          whileTap={{ scale: 0.84 }}
+          transition={springs.snappy}
+          className="flex flex-col items-center gap-0.5 py-1.5"
+          aria-current={active ? "page" : undefined}
+        >
+          <Icon
+            className={cn(
+              "size-5",
+              active ? "text-foreground" : "text-muted-foreground",
+            )}
+            strokeWidth={active ? 2.25 : 2}
+            aria-hidden
+          />
+          {active && (
+            <motion.span
+              layoutId="nav-dot"
+              className="size-1 rounded-full bg-foreground"
+              transition={springs.snappy}
+            />
+          )}
+          <span
+            className={cn(
+              "text-[10px] font-medium leading-none",
+              active ? "text-foreground" : "text-muted-foreground",
+            )}
+          >
+            {mobileLabel}
+          </span>
+        </motion.div>
+      </Link>
+    );
+  }
+
   return (
     <Link
       href={href}
       className={cn(
-        "transition-colors",
-        layout === "mobile" &&
-          "flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 py-1.5",
-        layout === "desktop" &&
-          "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium",
+        "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
         active
-          ? layout === "desktop"
-            ? "bg-muted text-foreground"
-            : "text-foreground"
-          : "text-muted-foreground hover:text-foreground",
-        layout === "desktop" && !active && "hover:bg-muted/80",
+          ? "bg-muted font-semibold text-foreground"
+          : "text-muted-foreground hover:bg-muted/80 hover:text-foreground",
       )}
       aria-current={active ? "page" : undefined}
     >
-      <Icon
-        className={cn(layout === "mobile" ? "size-5" : "size-4")}
-        strokeWidth={active ? 2.25 : 2}
-        aria-hidden
-      />
-      <span
-        className={cn(
-          layout === "mobile" && "text-[10px] font-medium leading-none",
-        )}
-      >
-        {layout === "mobile" ? mobileLabel : label}
-      </span>
+      <Icon className="size-4" strokeWidth={active ? 2.25 : 2} aria-hidden />
+      <span>{label}</span>
     </Link>
   );
 }
@@ -74,9 +96,10 @@ export function MobileTabBar() {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90 md:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-background/98 backdrop-blur-md supports-[backdrop-filter]:bg-background/95 md:hidden"
       aria-label="Main navigation"
     >
+      <LayoutGroup id="main-nav">
       <div className="mx-auto flex max-w-md pb-[env(safe-area-inset-bottom)]">
         {links.map(({ href, label, mobileLabel, icon }) => (
           <NavLink
@@ -90,6 +113,7 @@ export function MobileTabBar() {
           />
         ))}
       </div>
+      </LayoutGroup>
     </nav>
   );
 }

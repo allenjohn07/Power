@@ -6,7 +6,7 @@ import { Medal, Trophy, User } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { PLUG_POINTS, VOTE_POINTS } from "@/lib/leaderboard";
 import { fetchJson } from "@/lib/fetch-json";
-import { cn } from "@/lib/utils";
+import { cn, sectionLabelClass } from "@/lib/utils";
 
 type LeaderboardEntry = {
   rank: number;
@@ -131,13 +131,20 @@ export default function LeaderboardPage() {
                 </p>
               </div>
             ) : (
-              <ol className="flex flex-col gap-2" aria-label="Contributor rankings">
+              <>
+                <p className={cn(sectionLabelClass(), "mb-3")}>Top contributors</p>
+                <ol className="flex flex-col gap-2" aria-label="Contributor rankings">
                 {entries.map((entry) => (
                   <li
                     key={entry.userId}
                     className={cn(
-                      "flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3",
-                      entry.rank <= 3 && "border-primary/20",
+                      "flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-transform active:scale-[0.99]",
+                      entry.rank === 1 &&
+                        "border-amber-200/80 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/20",
+                      entry.rank === 2 &&
+                        "border-slate-200 bg-slate-50/80 dark:border-slate-700 dark:bg-slate-900/30",
+                      entry.rank === 3 &&
+                        "border-amber-100 bg-amber-50/30 dark:border-amber-900/30 dark:bg-amber-950/10",
                     )}
                   >
                     <div className="flex w-8 shrink-0 justify-center">
@@ -161,6 +168,7 @@ export default function LeaderboardPage() {
                   </li>
                 ))}
               </ol>
+              </>
             )}
           </div>
         </main>

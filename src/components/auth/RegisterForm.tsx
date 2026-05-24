@@ -70,9 +70,9 @@ export function RegisterForm() {
   };
 
   return (
-    <Card>
+    <Card className="rounded-xl border-border shadow-none">
       <CardHeader>
-        <CardTitle>Create account</CardTitle>
+        <CardTitle className="tracking-tight">Create account</CardTitle>
         <CardDescription>
           One vote per plug — sign up so ratings stay trustworthy.
         </CardDescription>

@@ -2,8 +2,11 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { ImageIcon } from "lucide-react";
+import { motion } from "framer-motion";
+import { ImageIcon, ThumbsDown, ThumbsUp } from "lucide-react";
+import { AnimatedVoteCount } from "@/components/AnimatedVoteCount";
 import { ImageLightbox } from "@/components/ImageLightbox";
+import { springs } from "@/lib/springs";
 import { cn } from "@/lib/utils";
 
 export type PlugPointWithBuilding = {
@@ -27,8 +30,14 @@ type PlugDirectoryCardProps = {
   isCastingVote?: boolean;
 };
 
-function buildingInitials(code: string) {
-  return code.slice(0, 2).toUpperCase();
+function buildingInitial(code: string) {
+  return code.charAt(0).toUpperCase();
+}
+
+function formatMetaLine(code: string, wing: string | null, floor: string) {
+  const floorLabel = floor.toUpperCase();
+  if (wing) return `${code} · ${wing} · ${floorLabel}`;
+  return `${code} · ${floorLabel}`;
 }
 
 function isPlaceholder(url: string) {
@@ -42,33 +51,74 @@ export function PlugDirectoryCard({
 }: PlugDirectoryCardProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [ripple, setRipple] = useState<{ x: number; y: number } | null>(null);
 
   const outletPhotos =
     plug.imageUrls?.length > 0 ? plug.imageUrls : [plug.imageUrl];
   const thumb = outletPhotos[0];
   const showPlaceholder = isPlaceholder(thumb);
 
-  const metaParts = [plug.building.code, plug.wing, plug.floor].filter(
-    Boolean,
-  );
   const userVote = plug.userVote ?? null;
+  const netVotes = plug.upvotes - plug.downvotes;
+  const reliabilityLabel =
+    netVotes > 0 && plug.upvotes > 0
+      ? "Likely works"
+      : netVotes < 0
+        ? "Often broken"
+        : null;
+
+  const triggerRipple = (e: React.PointerEvent<HTMLElement>) => {
+    if ((e.target as HTMLElement).closest("button")) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    setRipple({ x: e.clientX - r.left, y: e.clientY - r.top });
+    setTimeout(() => setRipple(null), 500);
+  };
 
   return (
     <>
-      <article className="rounded-xl border border-border bg-card p-4 transition-transform active:scale-[0.99]">
+      <motion.article
+        whileTap={{ scale: 0.975 }}
+        transition={springs.snappy}
+        onPointerDown={triggerRipple}
+        className="relative overflow-hidden rounded-xl border border-border bg-card p-3.5"
+      >
+        {ripple && (
+          <motion.span
+            className="pointer-events-none absolute rounded-full bg-foreground/5"
+            style={{ left: ripple.x, top: ripple.y, x: "-50%", y: "-50%" }}
+            initial={{ width: 0, height: 0, opacity: 1 }}
+            animate={{ width: 240, height: 240, opacity: 0 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          />
+        )}
+
         <div className="flex items-start gap-3">
           <div
-            className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-muted font-mono text-xs font-semibold text-muted-foreground"
+            className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-background font-mono text-sm font-semibold text-muted-foreground"
             aria-hidden
           >
-            {buildingInitials(plug.building.code)}
+            {buildingInitial(plug.building.code)}
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              {metaParts.join(" · ")}
-            </p>
-            <p className="mt-0.5 text-sm font-medium leading-snug text-foreground">
+            <div className="flex flex-wrap items-center gap-2 pr-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                {formatMetaLine(plug.building.code, plug.wing, plug.floor)}
+              </p>
+              {reliabilityLabel && (
+                <span
+                  className={cn(
+                    "rounded-full px-2 py-0.5 text-[10px] font-medium",
+                    netVotes > 0
+                      ? "bg-emerald-500/15 text-emerald-400"
+                      : "bg-red-500/15 text-red-400",
+                  )}
+                >
+                  {reliabilityLabel}
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-sm font-medium leading-snug text-foreground">
               {plug.exactLocation}
             </p>
             <p className="mt-0.5 truncate text-xs text-muted-foreground">
@@ -77,7 +127,7 @@ export function PlugDirectoryCard({
             {plug.submittedBy && (
               <p className="mt-1 text-[11px] text-muted-foreground">
                 Added by{" "}
-                <span className="font-medium text-foreground">
+                <span className="font-medium text-foreground/90">
                   @{plug.submittedBy}
                 </span>
               </p>
@@ -90,7 +140,7 @@ export function PlugDirectoryCard({
               setLightboxIndex(0);
               setLightboxOpen(true);
             }}
-            className="relative block size-11 shrink-0 overflow-hidden rounded-xl border border-border bg-muted transition-colors hover:bg-muted/80"
+            className="relative block size-11 shrink-0 overflow-hidden rounded-lg border border-border bg-background transition-colors hover:bg-muted/50"
             aria-label={`View ${outletPhotos.length} photo(s) of outlet at ${plug.exactLocation}`}
           >
             {showPlaceholder ? (
@@ -108,7 +158,7 @@ export function PlugDirectoryCard({
               />
             )}
             {outletPhotos.length > 1 && (
-              <span className="absolute bottom-0.5 right-0.5 rounded bg-foreground/75 px-1 py-px font-mono text-[9px] text-background">
+              <span className="absolute bottom-0.5 right-0.5 rounded bg-foreground/80 px-1 py-px font-mono text-[9px] text-background">
                 +{outletPhotos.length - 1}
               </span>
             )}
@@ -116,40 +166,52 @@ export function PlugDirectoryCard({
         </div>
 
         {onReliabilityVote && (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            disabled={isCastingVote}
-            onClick={() => onReliabilityVote(plug.id, "up")}
-            className={cn(
-              "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-              userVote === "up"
-                ? "border-emerald-600 bg-emerald-600 text-white"
-                : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100",
-            )}
-            aria-label={`Mark as working (${plug.upvotes} votes)`}
-          >
-            Works
-            <span className="font-mono tabular-nums">{plug.upvotes}</span>
-          </button>
-          <button
-            type="button"
-            disabled={isCastingVote}
-            onClick={() => onReliabilityVote(plug.id, "down")}
-            className={cn(
-              "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-              userVote === "down"
-                ? "border-red-600 bg-red-600 text-white"
-                : "border-red-200 bg-red-50 text-red-800 hover:bg-red-100",
-            )}
-            aria-label={`Mark as broken (${plug.downvotes} votes)`}
-          >
-            Broken
-            <span className="font-mono tabular-nums">{plug.downvotes}</span>
-          </button>
-        </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <motion.button
+              type="button"
+              disabled={isCastingVote}
+              whileTap={{ scale: 0.91 }}
+              transition={springs.snappy}
+              onClick={() => onReliabilityVote(plug.id, "up")}
+              className={cn(
+                "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                userVote === "up"
+                  ? "border-emerald-500/60 bg-emerald-500/25 text-emerald-300"
+                  : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/15",
+              )}
+              aria-label={`Mark as working (${plug.upvotes} votes)`}
+            >
+              <ThumbsUp className="size-3.5" aria-hidden />
+              Works
+              <AnimatedVoteCount
+                count={plug.upvotes}
+                className="font-mono tabular-nums"
+              />
+            </motion.button>
+            <motion.button
+              type="button"
+              disabled={isCastingVote}
+              whileTap={{ scale: 0.91 }}
+              transition={springs.snappy}
+              onClick={() => onReliabilityVote(plug.id, "down")}
+              className={cn(
+                "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+                userVote === "down"
+                  ? "border-red-500/60 bg-red-500/25 text-red-300"
+                  : "border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/15",
+              )}
+              aria-label={`Mark as broken (${plug.downvotes} votes)`}
+            >
+              <ThumbsDown className="size-3.5" aria-hidden />
+              Broken
+              <AnimatedVoteCount
+                count={plug.downvotes}
+                className="font-mono tabular-nums"
+              />
+            </motion.button>
+          </div>
         )}
-      </article>
+      </motion.article>
 
       <ImageLightbox
         images={outletPhotos}

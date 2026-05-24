@@ -15,7 +15,7 @@ import {
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { Button } from "@/components/ui/button";
 import { fetchJson } from "@/lib/fetch-json";
-import { cn } from "@/lib/utils";
+import { cn, sectionLabelClass } from "@/lib/utils";
 
 type AuthTab = "login" | "register";
 
@@ -178,9 +178,7 @@ function AccountSignedIn({ username }: { username: string }) {
             ) : (
               <>
                 <section>
-                  <h2 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                    Your contributions
-                  </h2>
+                  <h2 className={sectionLabelClass()}>Your contributions</h2>
                   {summary && summary.contributions.length === 0 ? (
                     <div className="mt-3 rounded-xl border border-dashed border-border bg-card px-6 py-10 text-center">
                       <p className="text-sm font-medium text-foreground">
@@ -209,9 +207,7 @@ function AccountSignedIn({ username }: { username: string }) {
                 </section>
 
                 <section>
-                  <h2 className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                    Your votes
-                  </h2>
+                  <h2 className={sectionLabelClass()}>Your votes</h2>
                   {summary && summary.votes.length === 0 ? (
                     <div className="mt-3 rounded-xl border border-dashed border-border bg-card px-6 py-10 text-center">
                       <p className="text-sm font-medium text-foreground">
@@ -295,7 +291,7 @@ export default function AccountPage() {
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6">
           <div className="mx-auto w-full max-w-md">
-            <div className="mb-4 grid grid-cols-2 gap-1 rounded-lg border border-border bg-muted p-1">
+            <div className="mb-4 grid grid-cols-2 gap-1 rounded-full border border-border bg-muted p-1">
               {(
                 [
                   { id: "login" as const, label: "Log in" },
@@ -307,7 +303,7 @@ export default function AccountPage() {
                   type="button"
                   onClick={() => setTab(id)}
                   className={cn(
-                    "rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    "rounded-full px-3 py-2 text-sm font-medium transition-colors",
                     tab === id
                       ? "bg-background text-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground",
