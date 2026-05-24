@@ -20,6 +20,12 @@
 # production
 /build
 
+# uploaded plug photos (keep folder via .gitkeep)
+/public/uploads/plugs/*
+!/public/uploads/plugs/.gitkeep
+/public/uploads/avatars/*
+!/public/uploads/avatars/.gitkeep
+
 # misc
 .DS_Store
 *.pem

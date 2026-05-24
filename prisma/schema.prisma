@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String     @id @default(cuid())
+  username     String     @unique
+  passwordHash String
+  imageUrl     String?
+  createdAt    DateTime   @default(now())
+  votes        PlugVote[]
+  plugs        Plug[]     @relation("SubmittedPlugs")
+}
+
+model Building {
+  id        Int     @id @default(autoincrement())
+  code      String  @unique
+  name      String
+  campus    String  @default("main")
+  mapSvgId  String?
+  mapX      Float   @default(50)
+  mapY      Float   @default(50)
+  maxFloor  Int     @default(5)
+  wings     String?
+  plugs     Plug[]
+}
+
+model Plug {
+  id            Int         @id @default(autoincrement())
+  buildingId    Int
+  floor         String
+  wing          String?
+  exactLocation String
+  upvotes       Int         @default(0)
+  downvotes     Int         @default(0)
+  submittedById String?
+  createdAt     DateTime    @default(now())
+  building      Building    @relation(fields: [buildingId], references: [id])
+  submittedBy   User?       @relation("SubmittedPlugs", fields: [submittedById], references: [id], onDelete: SetNull)
+  images        PlugImage[]
+  votes         PlugVote[]
+}
+
+model PlugVote {
+  id     Int      @id @default(autoincrement())
+  userId String
+  plugId Int
+  vote   VoteKind
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plug   Plug     @relation(fields: [plugId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, plugId])
+}
+
+enum VoteKind {
+  UP
+  DOWN
+}
+
+model PlugImage {
+  id        Int    @id @default(autoincrement())
+  plugId    Int
+  sortOrder Int    @default(0)
+  url       String
+  plug      Plug   @relation(fields: [plugId], references: [id], onDelete: Cascade)
+}
