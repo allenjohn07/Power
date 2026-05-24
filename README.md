@@ -81,7 +81,89 @@ Open [http://localhost:3000](http://localhost:3000).
 
 See **[ARCHITECTURE.md](./ARCHITECTURE.md)** for design decisions (relational indoor model vs PostGIS, vote denormalization, room-code parsing, schematic map + "near me" without GPS).
 
-## Project Structure
+The app is a **Next.js full-stack monolith** with a **layered / BFF-style** layout: React pages and components call **Route Handlers** (`src/app/api/**/route.ts`), which delegate domain logic to **`src/lib/*`** and persistence to **Prisma → PostgreSQL**. It is not MVC (no separate controller layer), Hexagonal (no ports/adapters), or tRPC — thin HTTP handlers plus shared library modules.
+
+### System overview (Mermaid)
+
+```mermaid
+flowchart TB
+  subgraph Client["Browser (React 19)"]
+    Pages["app/* pages<br/>HomeFeed, Map, Add, Account"]
+    Components["components/*<br/>cards, map, auth forms"]
+    Hooks["hooks/* + localStorage<br/>current building"]
+    Pages --> Components
+    Pages --> Hooks
+  end
+
+  subgraph Next["Next.js 16 App Router"]
+  direction TB
+    RouteHandlers["app/api/**/route.ts<br/>REST Route Handlers"]
+    Auth["auth.ts + NextAuth<br/>JWT credentials"]
+    Lib["src/lib/*<br/>votes, room-code, uploads, retries"]
+    RouteHandlers --> Auth
+    RouteHandlers --> Lib
+  end
+
+  subgraph Data["Data & assets"]
+    Prisma["lib/prisma.ts<br/>Prisma Client singleton"]
+    PG[("PostgreSQL")]
+    Static["public/uploads/<br/>plug photos + SVG map"]
+    Seed["prisma/schema + seed"]
+    Prisma --> PG
+    Seed --> PG
+  end
+
+  Client -->|"fetch / fetchJson"| RouteHandlers
+  Lib --> Prisma
+  RouteHandlers --> Static
+```
+
+### Example request: vote Works/Broken (`PATCH /api/plugs`)
+
+```mermaid
+sequenceDiagram
+  participant UI as PlugDirectoryCard / HomeFeed
+  participant API as route.ts PATCH /api/plugs
+  participant Auth as auth() NextAuth JWT
+  participant Votes as lib/votes applyPlugVote
+  participant DB as Prisma → PostgreSQL
+
+  UI->>API: PATCH JSON { id, vote: "up"|"down" }
+  API->>Auth: session.user.id
+  alt not signed in
+    API-->>UI: 401 Sign in to vote
+  end
+  API->>DB: plug.findUnique
+  API->>Votes: applyPlugVote(userId, plugId, vote)
+  Votes->>DB: $transaction plugVote + plug counters
+  API->>DB: plug.findUniqueOrThrow + images
+  API-->>UI: JSON serialized plug + userVote
+```
+
+### Folder map (high level)
+
+```
+sait-outlets/
+├── prisma/
+│   ├── schema.prisma      # User, Building, Plug, PlugVote, PlugImage
+│   └── seed.ts            # Campus catalog + sample plugs
+├── public/
+│   ├── maps/              # Official SAIT campus SVG
+│   └── uploads/plugs/     # Contributed plug photos
+└── src/
+    ├── app/               # App Router: pages + API Route Handlers
+    │   ├── page.tsx       # / → HomeFeed
+    │   ├── HomeFeed.tsx   # Main plug feed + filters
+    │   ├── map|add|account|leaderboard|welcome/
+    │   └── api/           # REST endpoints (plugs, buildings, upload, auth, account)
+    ├── components/        # UI: cards, map, shell, nav, shadcn/ui, auth forms
+    ├── hooks/             # Client hooks (e.g. saved building)
+    ├── lib/               # Domain + infra: votes, prisma, room-code, uploads
+    ├── data/              # Static campus metadata (floors/wings per code)
+    └── auth.ts            # NextAuth config (credentials → Prisma User)
+```
+
+## Project Structure (key files)
 
 - `prisma/schema.prisma` — `Building`, `Plug`, `PlugImage`, `PlugVote`, `User`
 - `prisma/seed.ts` — SAIT building catalog + sample plugs
