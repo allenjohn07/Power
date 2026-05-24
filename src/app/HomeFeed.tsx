@@ -291,8 +291,8 @@ export default function HomeFeed() {
     <AppShell>
       <div className="flex min-h-0 flex-1 flex-col">
         <header className="relative z-20 shrink-0 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/90">
-          <div className="px-4 pt-4 pb-3">
-            <div className="mb-3 flex items-stretch gap-2 md:max-w-xl">
+          <div className="px-4 pt-3 pb-2">
+            <div className="mb-2 flex items-stretch gap-2 md:max-w-xl">
               <BuildingPicker
                 buildings={buildings}
                 value={currentBuilding}
@@ -312,28 +312,30 @@ export default function HomeFeed() {
               </button>
             </div>
 
-            <div className="flex items-end justify-between gap-4">
+            <div className="flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
                   <Image
                     src="/uploads/logo/power-logo.png"
                     alt="SAIT Outlets logo"
-                    width={36}
-                    height={36}
-                    className="size-9 shrink-0 rounded-full"
+                    width={32}
+                    height={32}
+                    className="size-8 shrink-0 rounded-full"
                     priority
                   />
-                  <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                    SAIT Outlets
-                  </h1>
+                  <div className="min-w-0">
+                    <h1 className="truncate text-lg font-semibold tracking-tight text-foreground">
+                      SAIT Outlets
+                    </h1>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {feedSubtitle}
+                    </p>
+                  </div>
                 </div>
-                <p className="mt-0.5 text-sm text-muted-foreground">
-                  {feedSubtitle}
-                </p>
               </div>
               <Button
                 size="sm"
-                className="shrink-0 rounded-xl bg-primary px-4 font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+                className="h-8 shrink-0 rounded-lg px-3 text-xs font-semibold text-primary-foreground shadow-sm"
                 asChild
               >
                 <Link href={addHref}>
@@ -343,7 +345,8 @@ export default function HomeFeed() {
               </Button>
             </div>
 
-          <div className="-mx-4 mt-4 flex gap-2 overflow-x-auto px-[calc(1rem+1px)] py-px pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="mt-2 flex items-center gap-2">
+            <div className="-mx-4 flex min-w-0 flex-1 items-center gap-2 overflow-x-auto px-[calc(1rem+1px)] py-px [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <Sheet open={filterSheetOpen} onOpenChange={setFilterSheetOpen}>
               <button
                 type="button"
@@ -529,13 +532,16 @@ export default function HomeFeed() {
                 </button>
               );
             })}
+            </div>
+            <p
+              className="shrink-0 pr-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground tabular-nums"
+              aria-live="polite"
+            >
+              {loading
+                ? "…"
+                : `${visiblePlugPoints.length} plug${visiblePlugPoints.length === 1 ? "" : "s"}`}
+            </p>
           </div>
-
-          <p className="mt-3 pt-1 pb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-            {loading
-              ? "Loading"
-              : `${visiblePlugPoints.length} plug${visiblePlugPoints.length === 1 ? "" : "s"}`}
-          </p>
         </div>
       </header>
 
@@ -567,7 +573,7 @@ export default function HomeFeed() {
             </p>
           </div>
         ) : (
-          <ul className="flex flex-col gap-2.5 pt-2" aria-label="Plug feed">
+          <ul className="flex flex-col gap-2.5 pt-1" aria-label="Plug feed">
             {visiblePlugPoints.map((plug) => (
               <li key={plug.id}>
                 <PlugDirectoryCard
