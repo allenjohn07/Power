@@ -35,6 +35,60 @@ type CampusMapProps = {
 const MIN_SCALE = 0.6;
 const MAX_SCALE = 3;
 const SVG_URL = "/maps/sait-campus-map.svg";
+const PAN_THRESHOLD_PX = 6;
+
+type MapTransform = {
+  scale: number;
+  offset: { x: number; y: number };
+};
+
+function clampScale(scale: number) {
+  return Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale));
+}
+
+function zoomAtFocal(
+  current: MapTransform,
+  newScale: number,
+  focalX: number,
+  focalY: number,
+): MapTransform {
+  const scale = clampScale(newScale);
+  const worldX = (focalX - current.offset.x) / current.scale;
+  const worldY = (focalY - current.offset.y) / current.scale;
+  return {
+    scale,
+    offset: {
+      x: focalX - worldX * scale,
+      y: focalY - worldY * scale,
+    },
+  };
+}
+
+function focalFromClient(
+  viewport: HTMLElement,
+  clientX: number,
+  clientY: number,
+) {
+  const rect = viewport.getBoundingClientRect();
+  return {
+    x: clientX - rect.left - rect.width / 2,
+    y: clientY - rect.top - rect.height / 2,
+  };
+}
+
+function pointerDistance(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function pointerMidpoint(
+  a: { x: number; y: number },
+  b: { x: number; y: number },
+) {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
 
 export function CampusMap({
   buildings,
@@ -53,9 +107,18 @@ export function CampusMap({
   const [svgError, setSvgError] = useState(false);
   const [scale, setScale] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const dragRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(
-    null,
-  );
+  const transformRef = useRef<MapTransform>({ scale: 1, offset: { x: 0, y: 0 } });
+  const pointersRef = useRef(new Map<number, { x: number; y: number }>());
+  const panRef = useRef<{ lastX: number; lastY: number } | null>(null);
+  const pinchRef = useRef<{
+    distance: number;
+    midpoint: { x: number; y: number };
+  } | null>(null);
+  const didGestureRef = useRef(false);
+
+  useEffect(() => {
+    transformRef.current = { scale, offset };
+  }, [scale, offset]);
 
   const selected = buildings.find((b) => b.id === selectedId);
   const youAreHere = buildings.find((b) => b.id === youAreHereId);
@@ -164,6 +227,11 @@ export function CampusMap({
     if (!host) return;
 
     const onBuildingPinClick = (e: MouseEvent) => {
+      if (didGestureRef.current) {
+        didGestureRef.current = false;
+        return;
+      }
+
       const target = (e.target as Element).closest<SVGElement>(
         ".building-interactive",
       );
@@ -182,42 +250,163 @@ export function CampusMap({
   }, [buildings, onSelect, svgHtml]);
 
   useEffect(() => {
-    const el = viewportRef.current;
-    if (!el) return;
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const applyTransform = (next: MapTransform) => {
+      transformRef.current = next;
+      setScale(next.scale);
+      setOffset(next.offset);
+    };
+
+    const activePointers = () => [...pointersRef.current.values()];
+
+    const beginPinch = () => {
+      const [a, b] = activePointers();
+      if (!a || !b) return;
+      const midpoint = pointerMidpoint(a, b);
+      pinchRef.current = {
+        distance: pointerDistance(a, b),
+        midpoint,
+      };
+      panRef.current = null;
+    };
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       e.stopPropagation();
+      const focal = focalFromClient(viewport, e.clientX, e.clientY);
       const delta = e.deltaY > 0 ? -0.08 : 0.08;
-      setScale((s) => Math.min(MAX_SCALE, Math.max(MIN_SCALE, s + delta)));
+      applyTransform(
+        zoomAtFocal(
+          transformRef.current,
+          transformRef.current.scale + delta,
+          focal.x,
+          focal.y,
+        ),
+      );
     };
 
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType === "mouse" && e.button !== 0) return;
+
+      didGestureRef.current = false;
+      const focal = focalFromClient(viewport, e.clientX, e.clientY);
+      pointersRef.current.set(e.pointerId, focal);
+      viewport.setPointerCapture(e.pointerId);
+
+      if (pointersRef.current.size >= 2) {
+        beginPinch();
+      } else {
+        panRef.current = { lastX: focal.x, lastY: focal.y };
+        pinchRef.current = null;
+      }
+    };
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!pointersRef.current.has(e.pointerId)) return;
+
+      const focal = focalFromClient(viewport, e.clientX, e.clientY);
+      pointersRef.current.set(e.pointerId, focal);
+
+      const pointers = activePointers();
+      if (pointers.length >= 2) {
+        const [a, b] = pointers;
+        const distance = pointerDistance(a, b);
+        const midpoint = pointerMidpoint(a, b);
+
+        if (!pinchRef.current || distance < 1) {
+          beginPinch();
+          return;
+        }
+
+        const pinch = pinchRef.current;
+        const distRatio = distance / pinch.distance;
+        const midDeltaX = midpoint.x - pinch.midpoint.x;
+        const midDeltaY = midpoint.y - pinch.midpoint.y;
+        const current = transformRef.current;
+
+        let next: MapTransform = {
+          scale: current.scale,
+          offset: {
+            x: current.offset.x + midDeltaX,
+            y: current.offset.y + midDeltaY,
+          },
+        };
+        if (Math.abs(distRatio - 1) > 0.0001) {
+          next = zoomAtFocal(next, current.scale * distRatio, midpoint.x, midpoint.y);
+        }
+
+        if (
+          Math.abs(distRatio - 1) > 0.004 ||
+          Math.abs(midDeltaX) > PAN_THRESHOLD_PX ||
+          Math.abs(midDeltaY) > PAN_THRESHOLD_PX
+        ) {
+          didGestureRef.current = true;
+        }
+
+        pinchRef.current = { distance, midpoint };
+        applyTransform(next);
+        return;
+      }
+
+      if (!panRef.current) return;
+
+      const deltaX = focal.x - panRef.current.lastX;
+      const deltaY = focal.y - panRef.current.lastY;
+      if (
+        Math.abs(deltaX) > PAN_THRESHOLD_PX ||
+        Math.abs(deltaY) > PAN_THRESHOLD_PX
+      ) {
+        didGestureRef.current = true;
+      }
+
+      panRef.current = { lastX: focal.x, lastY: focal.y };
+      const current = transformRef.current;
+      applyTransform({
+        scale: current.scale,
+        offset: {
+          x: current.offset.x + deltaX,
+          y: current.offset.y + deltaY,
+        },
+      });
+    };
+
+    const onPointerEnd = (e: PointerEvent) => {
+      pointersRef.current.delete(e.pointerId);
+      try {
+        viewport.releasePointerCapture(e.pointerId);
+      } catch {
+        // Pointer may already be released.
+      }
+
+      const remaining = activePointers();
+      if (remaining.length >= 2) {
+        beginPinch();
+      } else if (remaining.length === 1) {
+        const point = remaining[0]!;
+        panRef.current = { lastX: point.x, lastY: point.y };
+        pinchRef.current = null;
+      } else {
+        panRef.current = null;
+        pinchRef.current = null;
+      }
+    };
+
+    viewport.addEventListener("wheel", onWheel, { passive: false });
+    viewport.addEventListener("pointerdown", onPointerDown);
+    viewport.addEventListener("pointermove", onPointerMove);
+    viewport.addEventListener("pointerup", onPointerEnd);
+    viewport.addEventListener("pointercancel", onPointerEnd);
+
+    return () => {
+      viewport.removeEventListener("wheel", onWheel);
+      viewport.removeEventListener("pointerdown", onPointerDown);
+      viewport.removeEventListener("pointermove", onPointerMove);
+      viewport.removeEventListener("pointerup", onPointerEnd);
+      viewport.removeEventListener("pointercancel", onPointerEnd);
+    };
   }, []);
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest(".building-interactive")) return;
-    dragRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      ox: offset.x,
-      oy: offset.y,
-    };
-    viewportRef.current?.setPointerCapture(e.pointerId);
-  };
-
-  const onPointerMove = (e: React.PointerEvent) => {
-    if (!dragRef.current) return;
-    setOffset({
-      x: dragRef.current.ox + (e.clientX - dragRef.current.x),
-      y: dragRef.current.oy + (e.clientY - dragRef.current.y),
-    });
-  };
-
-  const onPointerUp = () => {
-    dragRef.current = null;
-  };
 
   if (svgError) {
     return (
@@ -259,12 +448,8 @@ export function CampusMap({
 
       <div
         ref={viewportRef}
-        className="relative touch-none overflow-hidden overscroll-contain rounded-xl border border-border bg-sky-500"
-        style={{ height: "min(52vh, 420px)" }}
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerLeave={onPointerUp}
+        className="relative touch-none select-none overflow-hidden overscroll-contain rounded-xl border border-border bg-sky-500"
+        style={{ height: "min(52vh, 420px)", touchAction: "none" }}
       >
         {!svgHtml && (
           <div className="absolute inset-0 flex items-center justify-center text-sm text-white/90">
