@@ -1,6 +1,7 @@
 {
   "name": "sait-outlets",
   "version": "0.1.0",
+  "description": "Crowdsourced campus plug directory for SAIT — indoor outlet discovery without GPS, with Works/Broken voting and SAIT room-code autofill.",
   "private": true,
   "scripts": {
     "dev": "next dev",

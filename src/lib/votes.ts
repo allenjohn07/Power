@@ -11,6 +11,11 @@ export function toDbVote(vote: ClientVote): VoteKind {
   return vote === "up" ? VoteKind.UP : VoteKind.DOWN;
 }
 
+/**
+ * Apply a Works/Broken vote in one transaction: create, undo (same vote), or flip.
+ * Denormalized upvotes/downvotes on Plug keep the feed fast without aggregating
+ * PlugVote on every GET — acceptable tradeoff for a campus directory scale.
+ */
 export async function applyPlugVote(
   userId: string,
   plugId: number,
@@ -64,6 +69,7 @@ export async function applyPlugVote(
   });
 }
 
+/** Batch-resolve the signed-in user's votes for a page of plug ids (feed hydration). */
 export async function getUserVotesForPlugs(
   userId: string,
   plugIds: number[],

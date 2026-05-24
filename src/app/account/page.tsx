@@ -8,7 +8,10 @@ import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { LoginForm } from "@/components/auth/LoginForm";
 import { RegisterForm } from "@/components/auth/RegisterForm";
-import { PlugCard, type PlugWithBuilding } from "@/components/PlugCard";
+import {
+  PlugDirectoryCard,
+  type PlugPointWithBuilding,
+} from "@/components/PlugDirectoryCard";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { Button } from "@/components/ui/button";
 import { fetchJson } from "@/lib/fetch-json";
@@ -25,8 +28,8 @@ type AccountSummary = {
   voteCount: number;
   totalContributors: number;
   imageUrl: string | null;
-  contributions: PlugWithBuilding[];
-  votes: PlugWithBuilding[];
+  contributions: PlugPointWithBuilding[];
+  votes: PlugPointWithBuilding[];
 };
 
 function AccountSignedIn({ username }: { username: string }) {
@@ -39,10 +42,11 @@ function AccountSignedIn({ username }: { username: string }) {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchJson<AccountSummary>("/api/account/summary", {
-        signal,
-      });
-      if (!signal?.aborted) setSummary(data);
+      const accountSummary = await fetchJson<AccountSummary>(
+        "/api/account/summary",
+        { signal },
+      );
+      if (!signal?.aborted) setSummary(accountSummary);
     } catch {
       if (!signal?.aborted) {
         setError("Could not load your account.");
@@ -59,7 +63,7 @@ function AccountSignedIn({ username }: { username: string }) {
     return () => ac.abort();
   }, [loadSummary]);
 
-  const handleVote = async (id: number, vote: "up" | "down") => {
+  const castPlugReliabilityVote = async (id: number, vote: "up" | "down") => {
     setVotingId(id);
     try {
       const res = await fetch("/api/plugs", {
@@ -99,7 +103,7 @@ function AccountSignedIn({ username }: { username: string }) {
         ? "Unranked"
         : "Not ranked yet";
 
-  const handleImageChange = (imageUrl: string) => {
+  const syncContributorAvatar = (imageUrl: string) => {
     setSummary((prev) => (prev ? { ...prev, imageUrl } : prev));
   };
 
@@ -121,7 +125,7 @@ function AccountSignedIn({ username }: { username: string }) {
               <ProfileAvatar
                 username={username}
                 imageUrl={summary?.imageUrl ?? null}
-                onImageChange={handleImageChange}
+                onImageChange={syncContributorAvatar}
               />
               <p className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-semibold text-foreground">
@@ -202,7 +206,7 @@ function AccountSignedIn({ username }: { username: string }) {
                     >
                       {summary?.contributions.map((plug) => (
                         <li key={plug.id}>
-                          <PlugCard plug={plug} />
+                          <PlugDirectoryCard plug={plug} />
                         </li>
                       ))}
                     </ul>
@@ -233,10 +237,10 @@ function AccountSignedIn({ username }: { username: string }) {
                     >
                       {summary?.votes.map((plug) => (
                         <li key={plug.id}>
-                          <PlugCard
+                          <PlugDirectoryCard
                             plug={plug}
-                            onVote={handleVote}
-                            isVoting={votingId === plug.id}
+                            onReliabilityVote={castPlugReliabilityVote}
+                            isCastingVote={votingId === plug.id}
                           />
                         </li>
                       ))}
@@ -249,7 +253,7 @@ function AccountSignedIn({ username }: { username: string }) {
             <Button
               type="button"
               variant="outline"
-              className="w-full gap-2"
+              className="w-full gap-2 rounded-xl"
               onClick={() => {
                 toast.success("Logged out");
                 signOut({ callbackUrl: "/account" });

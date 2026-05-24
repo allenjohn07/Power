@@ -1,7 +1,14 @@
 /**
- * SAIT room-number parsing (see sait.ca campus map help):
+ * SAIT room-code parser — the indoor "GPS replacement" for this app.
+ *
+ * Students already know building/floor from room numbers (CA416, NN1106).
+ * We decode those tokens into filter state instead of lat/long or beacons.
+ *
+ * Rules (see sait.ca campus map help):
  * - Leading letters = building + wing (e.g. NL = Senator Burns, L wing)
- * - Following digits = floor + room (e.g. MB314 → 3rd floor, NN1106 → 11th floor)
+ * - Following digits = floor + room (e.g. MB314 → 3rd floor, NN1106 → 11th)
+ *
+ * KNOWN_ROOMS adds directory hints from the official campus API — optional UX sugar.
  */
 
 import { floorsForBuilding } from "@/data/campus-buildings";
@@ -159,6 +166,10 @@ function ordinalSuffix(n: number): string {
   }
 }
 
+/**
+ * Infer floor from trailing digits. Tries two-digit floor first (NN1106 → 11th)
+ * then single-digit — matches how SAIT encodes multi-storey wings.
+ */
 function parseFloorDigits(
   digits: string,
   buildingCode: string,
@@ -262,6 +273,7 @@ export function extractRoomToken(input: string): string | null {
   return tokens[0] ?? null;
 }
 
+/** Entry point for add-form autofill and GET /api/parse-room. */
 export function parseRoomInput(input: string): ParsedRoomCode | null {
   const token = extractRoomToken(input);
   if (!token) return null;

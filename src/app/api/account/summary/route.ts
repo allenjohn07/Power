@@ -5,6 +5,10 @@ import { PLUG_IMAGE_INCLUDE, serializePlug } from "@/lib/plug-images";
 import { prisma } from "@/lib/prisma";
 import { toClientVote } from "@/lib/votes";
 
+/**
+ * GET — Signed-in contributor profile: rank, submissions, and vote history.
+ * Parallel Prisma reads keep account page latency low on first paint.
+ */
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) {

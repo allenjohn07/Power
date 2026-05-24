@@ -17,6 +17,10 @@ export function computePoints(plugsAdded: number, votesCast: number): number {
   return plugsAdded * PLUG_POINTS + votesCast * VOTE_POINTS;
 }
 
+/**
+ * Build contributor standings with two groupBy queries (plugs + votes), then join users.
+ * Avoids loading every Plug/PlugVote row — important as the crowdsourced feed grows.
+ */
 export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   const [plugGroups, voteGroups] = await Promise.all([
     prisma.plug.groupBy({

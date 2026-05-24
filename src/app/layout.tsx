@@ -14,8 +14,17 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SAIT Outlets",
-  description: "Campus plug point directory for SAIT students",
+  title: "SAIT Outlets — Find a plug before your battery dies",
+  description:
+    "Crowdsourced indoor outlet directory for SAIT main campus. Filter by building, floor, and wing; vote Works or Broken; no GPS required.",
+  keywords: [
+    "SAIT",
+    "campus outlets",
+    "charging",
+    "battery",
+    "indoor navigation",
+    "crowdsourced",
+  ],
   icons: {
     icon: "/uploads/logo/power-logo.png",
     apple: "/uploads/logo/power-logo.png",

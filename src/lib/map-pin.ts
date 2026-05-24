@@ -4,6 +4,7 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const SVG_WIDTH = 1023;
 const SVG_HEIGHT = 886;
 
+/** Official SVG element id, with static fallbacks when DB mapSvgId is missing. */
 export function svgIdsForMapBuilding(building: {
   code: string;
   mapSvgId?: string | null;
@@ -16,7 +17,10 @@ export function svgIdsForMapBuilding(building: {
 
 export type MapPoint = { x: number; y: number };
 
-/** Classic teardrop pin (scaled down) — tip points at the building. */
+/**
+ * Inject a "You are here" pin into the official SAIT SVG via getBBox().
+ * Schematic map — pin tip anchors to building centroid, not GPS coordinates.
+ */
 export function placeYouAreHerePin(
   host: HTMLElement,
   building: { code: string; mapSvgId?: string | null; name: string },
@@ -102,6 +106,7 @@ export function removeYouAreHerePin(host: HTMLElement): void {
   host.querySelector("#you-are-here-pin")?.remove();
 }
 
+/** Pan/zoom the viewport so the user's building sits in the visible frame. */
 export function computeMapFocus(
   viewport: HTMLElement,
   center: MapPoint,

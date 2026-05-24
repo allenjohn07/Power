@@ -4,6 +4,11 @@ import path from "path";
 const MAX_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
+/**
+ * Write an uploaded outlet or avatar image under public/uploads/.
+ * Local disk keeps the hackathon deploy simple (no S3 signing) and URLs stable
+ * for Prisma PlugImage rows referenced by the relational feed.
+ */
 export async function saveUploadedImage(
   file: File,
   subdir: "plugs" | "avatars",

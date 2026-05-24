@@ -22,7 +22,7 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const signInContributor = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -53,7 +53,7 @@ export function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={signInContributor} className="flex flex-col gap-4">
           {error && (
             <p
               role="alert"
@@ -84,7 +84,11 @@ export function LoginForm() {
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full rounded-xl bg-primary font-semibold hover:bg-primary/90"
+            disabled={loading}
+          >
             {loading ? "Signing in…" : "Log in"}
           </Button>
         </form>

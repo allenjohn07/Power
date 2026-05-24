@@ -25,7 +25,11 @@ function getPrismaClient(): PrismaClient {
   return client;
 }
 
-/** Proxy ensures dev hot-reload picks up new Prisma models after `db push`. */
+/**
+ * Proxy ensures dev hot-reload picks up new Prisma models after `db push`.
+ * Next.js invalidates modules often; a stale singleton missing new delegates
+ * was a real footgun during schema iteration.
+ */
 export const prisma = new Proxy({} as PrismaClient, {
   get(_target, prop, receiver) {
     const client = getPrismaClient();

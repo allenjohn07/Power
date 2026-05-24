@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
 import { BuildingPicker } from "@/components/BuildingPicker";
 import { CampusMap, type MapBuilding } from "@/components/CampusMap";
-import type { PlugWithBuilding } from "@/components/PlugCard";
+import type { PlugPointWithBuilding } from "@/components/PlugDirectoryCard";
 import { useCurrentBuilding } from "@/hooks/useCurrentBuilding";
 
 type BuildingApi = {
@@ -23,7 +23,7 @@ export default function MapPage() {
   } = useCurrentBuilding();
 
   const [buildings, setBuildings] = useState<BuildingApi[]>([]);
-  const [plugs, setPlugs] = useState<PlugWithBuilding[]>([]);
+  const [campusPlugPoints, setCampusPlugPoints] = useState<PlugPointWithBuilding[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -33,10 +33,10 @@ export default function MapPage() {
       fetch("/api/plugs?campus=main"),
     ])
       .then(async ([bRes, pRes]) => {
-        const bData = await bRes.json();
-        const pData = await pRes.json();
-        if (Array.isArray(bData)) setBuildings(bData);
-        if (Array.isArray(pData)) setPlugs(pData);
+        const campusBuildings = await bRes.json();
+        const plugPoints = await pRes.json();
+        if (Array.isArray(campusBuildings)) setBuildings(campusBuildings);
+        if (Array.isArray(plugPoints)) setCampusPlugPoints(plugPoints);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -49,7 +49,7 @@ export default function MapPage() {
   }, [locationReady, currentBuilding]);
 
   const mapBuildings: MapBuilding[] = useMemo(() => {
-    const counts = plugs.reduce<Record<number, number>>((acc, p) => {
+    const counts = campusPlugPoints.reduce<Record<number, number>>((acc, p) => {
       acc[p.buildingId] = (acc[p.buildingId] ?? 0) + 1;
       return acc;
     }, {});
@@ -60,7 +60,7 @@ export default function MapPage() {
       mapSvgId: b.mapSvgId,
       plugCount: counts[b.id] ?? 0,
     }));
-  }, [buildings, plugs]);
+  }, [buildings, campusPlugPoints]);
 
   const youAreHereBuilding = useMemo(() => {
     if (!currentBuilding || mapBuildings.length === 0) return null;
@@ -93,7 +93,7 @@ export default function MapPage() {
     [saveLocation],
   );
 
-  const totalPlugs = plugs.length;
+  const totalPlugs = campusPlugPoints.length;
 
   return (
     <AppShell>

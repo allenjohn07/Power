@@ -1,3 +1,6 @@
+// SAIT Outlets — relational indoor plug directory (not a geo/spatial app).
+// Location = Building + floor + wing + human micro-location text.
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -17,26 +20,28 @@ model User {
   plugs        Plug[]     @relation("SubmittedPlugs")
 }
 
+/// Campus building catalog — anchor for filters, map SVG ids, and plug FKs.
 model Building {
   id        Int     @id @default(autoincrement())
-  code      String  @unique
+  code      String  @unique // e.g. "N" for Senator Burns; wings use NL, NN, etc.
   name      String
   campus    String  @default("main")
-  mapSvgId  String?
-  mapX      Float   @default(50)
+  mapSvgId  String? // Element id in public/maps/sait-campus-map.svg
+  mapX      Float   @default(50) // Schematic position for "near me" (not GPS)
   mapY      Float   @default(50)
   maxFloor  Int     @default(5)
-  wings     String?
+  wings     String? // Comma-separated wing prefixes when applicable
   plugs     Plug[]
 }
 
+/// One crowdsourced outlet report at a micro-location inside a building.
 model Plug {
   id            Int         @id @default(autoincrement())
   buildingId    Int
-  floor         String
+  floor         String // Human label, e.g. "4th Floor" — matches filter dropdowns
   wing          String?
-  exactLocation String
-  upvotes       Int         @default(0)
+  exactLocation String // Prose: "Behind vending machine near CA416"
+  upvotes       Int         @default(0) // Denormalized for fast feed reads
   downvotes     Int         @default(0)
   submittedById String?
   createdAt     DateTime    @default(now())
@@ -46,6 +51,7 @@ model Plug {
   votes         PlugVote[]
 }
 
+/// One Works/Broken vote per user per plug — integrity via @@unique.
 model PlugVote {
   id     Int      @id @default(autoincrement())
   userId String
@@ -66,6 +72,6 @@ model PlugImage {
   id        Int    @id @default(autoincrement())
   plugId    Int
   sortOrder Int    @default(0)
-  url       String
+  url       String // /uploads/plugs/... after POST /api/upload
   plug      Plug   @relation(fields: [plugId], references: [id], onDelete: Cascade)
 }

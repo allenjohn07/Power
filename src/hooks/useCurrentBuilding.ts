@@ -8,6 +8,10 @@ import {
   type CurrentBuilding,
 } from "@/lib/current-building";
 
+/**
+ * Hydrates saved building from localStorage after mount (avoids SSR mismatch).
+ * Feed waits for `ready` before applying default building filters.
+ */
 export function useCurrentBuilding() {
   const [building, setBuilding] = useState<CurrentBuilding | null>(null);
   const [ready, setReady] = useState(false);

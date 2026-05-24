@@ -4,7 +4,11 @@ export type MapPosition = {
   mapY: number;
 };
 
-/** Buildings closest to `originId` on the campus map (includes origin). */
+/**
+ * "Near me" without GPS: Euclidean distance on schematic map coordinates.
+ * Buildings share mapX/mapY from DB or SVG bbox — good enough for adjacent
+ * wings on the official campus map, not meter-accurate positioning.
+ */
 export function nearbyBuildingIds(
   buildings: MapPosition[],
   originId: number,

@@ -73,10 +73,11 @@ export default function LeaderboardPage() {
       setLoading(true);
       setError(null);
       try {
-        const data = await fetchJson<LeaderboardEntry[]>("/api/leaderboard", {
-          signal: ac.signal,
-        });
-        if (!ac.signal.aborted) setEntries(data);
+        const contributorStandings = await fetchJson<LeaderboardEntry[]>(
+          "/api/leaderboard",
+          { signal: ac.signal },
+        );
+        if (!ac.signal.aborted) setEntries(contributorStandings);
       } catch {
         if (!ac.signal.aborted) {
           setError("Could not load leaderboard.");

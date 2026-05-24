@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 
 export const MAX_PLUG_PHOTOS = 3;
 
+/** Shared include shape — keeps GET/POST/PATCH responses consistent for the feed. */
 export const PLUG_IMAGE_INCLUDE = {
   images: { orderBy: { sortOrder: "asc" as const } },
   building: { select: { name: true, code: true, campus: true } },
@@ -30,6 +31,7 @@ export type SerializedPlug = {
   imageUrl: string;
 };
 
+/** Map Prisma plug rows to API DTOs the feed and directory cards consume. */
 export function serializePlug(
   plug: Prisma.PlugGetPayload<{ include: typeof PLUG_IMAGE_INCLUDE }>,
   userVote: "up" | "down" | null = null,

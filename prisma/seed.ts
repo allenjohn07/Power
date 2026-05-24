@@ -1,3 +1,8 @@
+/**
+ * Seed: full SAIT main-campus building catalog + representative plug points.
+ * Buildings come from src/data/sait-main-campus (official map SVG ids + wings).
+ * Sample plugs demonstrate floor/wing/micro-location patterns judges see in the feed.
+ */
 import { PrismaClient } from "@prisma/client";
 import { MAIN_CAMPUS_BUILDINGS } from "../src/data/sait-main-campus";
 

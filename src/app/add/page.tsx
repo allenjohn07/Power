@@ -51,13 +51,13 @@ export default function AddPlugPage() {
   useEffect(() => {
     fetch("/api/buildings?campus=main")
       .then((res) => res.json())
-      .then((data) => {
-        if (!Array.isArray(data)) return;
-        setBuildings(data);
+      .then((campusBuildings) => {
+        if (!Array.isArray(campusBuildings)) return;
+        setBuildings(campusBuildings);
         if (currentBuilding) {
           setBuildingId(String(currentBuilding.id));
-        } else if (data[0]) {
-          setBuildingId(String(data[0].id));
+        } else if (campusBuildings[0]) {
+          setBuildingId(String(campusBuildings[0].id));
         }
       })
       .catch(() => setError("Could not load buildings."));
@@ -68,7 +68,7 @@ export default function AddPlugPage() {
     [buildings, buildingId],
   );
 
-  const handleAddPhotos = async (files: FileList) => {
+  const uploadOutletEvidencePhotos = async (files: FileList) => {
     const remaining = MAX_PLUG_PHOTOS - photos.length;
     const toUpload = Array.from(files).slice(0, remaining);
     if (toUpload.length === 0) return;
@@ -80,10 +80,10 @@ export default function AddPlugPage() {
       const formData = new FormData();
       toUpload.forEach((f) => formData.append("files", f));
       const res = await fetch("/api/upload", { method: "POST", body: formData });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Upload failed");
+      const uploadPayload = await res.json();
+      if (!res.ok) throw new Error(uploadPayload.error ?? "Upload failed");
 
-      const newPhotos: UploadedPhoto[] = (data.urls as string[]).map(
+      const newPhotos: UploadedPhoto[] = (uploadPayload.urls as string[]).map(
         (url: string, i: number) => ({
           url,
           preview: URL.createObjectURL(toUpload[i]),
@@ -100,7 +100,7 @@ export default function AddPlugPage() {
     }
   };
 
-  const handleRemovePhoto = (index: number) => {
+  const removeOutletEvidencePhoto = (index: number) => {
     setPhotos((prev) => {
       const next = [...prev];
       const removed = next.splice(index, 1)[0];
@@ -111,7 +111,7 @@ export default function AddPlugPage() {
     });
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const submitNewPlugPoint = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
@@ -128,12 +128,12 @@ export default function AddPlugPage() {
           imageUrls: photos.map((p) => p.url),
         }),
       });
-      const data = await res.json();
+      const createPayload = await res.json();
       if (res.status === 401) {
         router.replace("/account");
         return;
       }
-      if (!res.ok) throw new Error(data.error ?? "Failed to add plug");
+      if (!res.ok) throw new Error(createPayload.error ?? "Failed to add plug");
       toast.success("Plug submitted!");
       router.push(`/?buildingId=${buildingId}`);
     } catch (err) {
@@ -178,7 +178,7 @@ export default function AddPlugPage() {
       </header>
 
       <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={submitNewPlugPoint} className="flex flex-col gap-5">
           {error && (
             <p
               role="alert"
@@ -281,14 +281,14 @@ export default function AddPlugPage() {
           <MultiPhotoUpload
             photos={photos}
             uploading={uploading}
-            onAdd={handleAddPhotos}
-            onRemove={handleRemovePhoto}
+            onAdd={uploadOutletEvidencePhotos}
+            onRemove={removeOutletEvidencePhoto}
           />
 
           <Button
             type="submit"
             disabled={submitting || uploading || !buildingId || !floor}
-            className="min-h-11 w-full"
+            className="min-h-11 w-full rounded-xl bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
           >
             {submitting ? "Submitting…" : "Submit plug"}
           </Button>

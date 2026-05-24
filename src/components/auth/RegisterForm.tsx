@@ -23,7 +23,7 @@ export function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: FormEvent) => {
+  const registerContributor = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -78,7 +78,7 @@ export function RegisterForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form onSubmit={registerContributor} className="flex flex-col gap-4">
           {error && (
             <p
               role="alert"
@@ -122,7 +122,11 @@ export function RegisterForm() {
               required
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full rounded-xl bg-primary font-semibold hover:bg-primary/90"
+            disabled={loading}
+          >
             {loading ? "Creating account…" : "Create account"}
           </Button>
         </form>

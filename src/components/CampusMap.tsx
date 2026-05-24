@@ -1,5 +1,11 @@
 "use client";
 
+/**
+ * Interactive schematic campus map — official SAIT SVG, not Mapbox/PostGIS.
+ * Buildings are clickable regions; plug counts come from the relational feed.
+ * "You are here" uses self-reported building + SVG getBBox(), not device GPS.
+ */
+
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -54,6 +60,7 @@ export function CampusMap({
   const selected = buildings.find((b) => b.id === selectedId);
   const youAreHere = buildings.find((b) => b.id === youAreHereId);
 
+  // Load official campus SVG once; normalize viewBox for responsive scaling.
   useEffect(() => {
     fetch(SVG_URL)
       .then((r) => r.text())
@@ -69,6 +76,7 @@ export function CampusMap({
       .catch(() => setSvgError(true));
   }, []);
 
+  // Wire DB buildings to SVG path ids; expose plug counts for density at a glance.
   const applyBuildingStyles = useCallback(() => {
     const host = svgHostRef.current;
     if (!host) return;
@@ -155,7 +163,7 @@ export function CampusMap({
     const host = svgHostRef.current;
     if (!host) return;
 
-    const handleClick = (e: MouseEvent) => {
+    const onBuildingPinClick = (e: MouseEvent) => {
       const target = (e.target as Element).closest<SVGElement>(
         ".building-interactive",
       );
@@ -169,8 +177,8 @@ export function CampusMap({
       if (match) onSelect?.(match);
     };
 
-    host.addEventListener("click", handleClick);
-    return () => host.removeEventListener("click", handleClick);
+    host.addEventListener("click", onBuildingPinClick);
+    return () => host.removeEventListener("click", onBuildingPinClick);
   }, [buildings, onSelect, svgHtml]);
 
   useEffect(() => {
@@ -213,7 +221,7 @@ export function CampusMap({
 
   if (svgError) {
     return (
-      <p className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+      <p className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
         Could not load the campus map. Ensure{" "}
         <code className="text-xs">public/maps/sait-campus-map.svg</code> exists.
       </p>
@@ -223,7 +231,7 @@ export function CampusMap({
   return (
     <div className="flex flex-col gap-4">
       {youAreHere ? (
-        <div className="flex min-w-0 items-center gap-2 rounded-lg border border-border bg-muted px-3 py-2.5">
+        <div className="flex min-w-0 items-center gap-2 rounded-xl border border-border bg-muted px-4 py-2.5">
           <span
             className="h-2 w-2 shrink-0 rounded-full bg-emerald-500"
             aria-hidden
@@ -238,7 +246,7 @@ export function CampusMap({
           <button
             type="button"
             onClick={onChangeLocation}
-            className="min-h-10 w-full rounded-md border border-dashed border-border bg-card text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
+            className="min-h-10 w-full rounded-xl border border-dashed border-border bg-card px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
           >
             Set your location
           </button>
@@ -291,7 +299,7 @@ export function CampusMap({
               type="button"
               role="listitem"
               onClick={() => onSelect?.(b)}
-              className={`flex shrink-0 flex-col rounded-lg border px-3 py-2 text-left transition-colors active:scale-[0.99] ${
+              className={`flex shrink-0 flex-col rounded-xl border px-4 py-2 text-left transition-colors active:scale-[0.99] ${
                 isHere
                   ? "border-foreground bg-foreground text-background"
                   : active
@@ -352,14 +360,14 @@ export function CampusMap({
               <button
                 type="button"
                 onClick={() => onSetLocation(selected)}
-                className="inline-flex min-h-10 w-full items-center justify-center rounded-md border border-border bg-muted text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
+                className="inline-flex min-h-10 w-full items-center justify-center rounded-xl border border-border bg-muted px-4 text-sm font-medium text-foreground transition-colors hover:bg-muted/80"
               >
                 Set as my location
               </button>
             )}
             <Link
               href={`/?buildingId=${selected.id}`}
-              className="inline-flex min-h-10 w-full items-center justify-center rounded-md bg-primary text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+              className="inline-flex min-h-10 w-full items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
             >
               View plugs in {selected.code}
             </Link>

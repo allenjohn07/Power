@@ -1,8 +1,14 @@
 import { prisma } from "@/lib/prisma";
 
+/** Match transient Postgres / Prisma connection failures common on campus Wi‑Fi. */
 const RETRYABLE =
   /connect|connection|timeout|ECONNREFUSED|Can't reach database|P1001|P1017/i;
 
+/**
+ * Wrap read-heavy Prisma calls with bounded retries + reconnect.
+ * Feed and map pages hit the DB on every filter change; a single blip
+ * should not blank the UI during a hackathon demo.
+ */
 export async function withDbRetry<T>(
   operation: () => Promise<T>,
   retries = 2,

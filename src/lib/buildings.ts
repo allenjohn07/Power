@@ -1,3 +1,4 @@
+/** API shape for building pickers: Prisma row + derived floor/wing option lists. */
 import type { Building } from "@prisma/client";
 import { floorsForBuilding, STANDARD_FLOORS } from "@/data/campus-buildings";
 

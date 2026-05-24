@@ -2,26 +2,33 @@ import { NextRequest, NextResponse } from "next/server";
 import { MAX_PLUG_PHOTOS } from "@/lib/plug-images";
 import { saveUploadedImage } from "@/lib/upload-image";
 
+/**
+ * POST — Persist outlet evidence photos to local disk (public/uploads/plugs).
+ *
+ * We accept multipart files here and return URLs for the plug POST handler.
+ * Separating upload from creation avoids huge JSON bodies and keeps Prisma
+ * transactions small — important on congested campus networks.
+ */
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    const files: File[] = [];
+    const outletPhotoFiles: File[] = [];
 
     const multi = formData.getAll("files");
     for (const entry of multi) {
-      if (entry instanceof File && entry.size > 0) files.push(entry);
+      if (entry instanceof File && entry.size > 0) outletPhotoFiles.push(entry);
     }
 
     const single = formData.get("file");
     if (single instanceof File && single.size > 0) {
-      files.push(single);
+      outletPhotoFiles.push(single);
     }
 
-    if (files.length === 0) {
+    if (outletPhotoFiles.length === 0) {
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
     }
 
-    if (files.length > MAX_PLUG_PHOTOS) {
+    if (outletPhotoFiles.length > MAX_PLUG_PHOTOS) {
       return NextResponse.json(
         { error: `Maximum ${MAX_PLUG_PHOTOS} photos per upload` },
         { status: 400 },
@@ -29,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     const urls: string[] = [];
-    for (const file of files) {
+    for (const file of outletPhotoFiles) {
       urls.push(await saveUploadedImage(file, "plugs"));
     }
 
@@ -41,4 +48,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

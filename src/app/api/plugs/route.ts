@@ -9,9 +9,18 @@ import { prisma } from "@/lib/prisma";
 import { withDbRetry } from "@/lib/db-query";
 import { applyPlugVote, getUserVotesForPlugs } from "@/lib/votes";
 
+/** Fallback when contributors skip photos — keeps the feed visually consistent. */
 const PLACEHOLDER =
   "https://placehold.co/120x120/e2e8f0/64748b?text=Plug";
 
+/**
+ * GET — Crowdsourced plug feed with optional relational filters.
+ *
+ * We model location as Building → floor → wing → exactLocation (text), not
+ * PostGIS coordinates. Indoor GPS is unreliable on campus; a filterable relational
+ * query is faster to ship, easier to vote on, and matches how students describe
+ * outlets ("behind the vending machine near CA416").
+ */
 export async function GET(request: NextRequest) {
   try {
     const session = await auth();
@@ -34,6 +43,7 @@ export async function GET(request: NextRequest) {
       }),
     );
 
+    // Batch-load votes for the current page of plugs (avoids N+1 on the feed).
     const userVotes = session?.user?.id
       ? await getUserVotesForPlugs(
           session.user.id,
@@ -53,6 +63,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
+/**
+ * POST — Submit a new plug point (auth required).
+ * Images are stored by URL after a separate upload step — keeps this handler
+ * focused on relational integrity (building FK, floor, wing, micro-location).
+ */
 export async function POST(request: NextRequest) {
   try {
     const session = await auth();
@@ -108,6 +123,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/**
+ * PATCH — Toggle Works/Broken reliability vote (auth required).
+ * Vote logic lives in applyPlugVote (transactional flip / undo / switch).
+ */
 export async function PATCH(request: NextRequest) {
   try {
     const session = await auth();

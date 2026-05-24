@@ -5,8 +5,10 @@ export default function HomePage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-dvh items-center justify-center bg-zinc-50">
-          <p className="text-sm text-muted-foreground">Loading…</p>
+        <div className="flex min-h-dvh items-center justify-center bg-zinc-50 p-4">
+          <p className="rounded-xl bg-background px-4 py-3 text-sm text-muted-foreground shadow-sm">
+            Loading…
+          </p>
         </div>
       }
     >

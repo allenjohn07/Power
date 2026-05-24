@@ -1,3 +1,7 @@
+/**
+ * Derive schematic mapX/mapY from the official SVG bbox (client-side).
+ * Powers "Near me" when DB defaults aren't tuned — still not GPS.
+ */
 import { svgIdsForMapBuilding } from "@/lib/map-pin";
 import type { MapPosition } from "@/lib/nearby-buildings";
 

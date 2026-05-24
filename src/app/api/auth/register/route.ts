@@ -1,3 +1,4 @@
+/** POST — Create contributor account (required before adding plugs or voting). */
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";

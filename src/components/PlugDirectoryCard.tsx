@@ -6,7 +6,7 @@ import { ImageIcon } from "lucide-react";
 import { ImageLightbox } from "@/components/ImageLightbox";
 import { cn } from "@/lib/utils";
 
-export type PlugWithBuilding = {
+export type PlugPointWithBuilding = {
   id: number;
   buildingId: number;
   floor: string;
@@ -21,10 +21,10 @@ export type PlugWithBuilding = {
   building: { name: string; code: string; campus?: string };
 };
 
-type PlugCardProps = {
-  plug: PlugWithBuilding;
-  onVote?: (id: number, vote: "up" | "down") => void;
-  isVoting?: boolean;
+type PlugDirectoryCardProps = {
+  plug: PlugPointWithBuilding;
+  onReliabilityVote?: (id: number, vote: "up" | "down") => void;
+  isCastingVote?: boolean;
 };
 
 function buildingInitials(code: string) {
@@ -35,13 +35,17 @@ function isPlaceholder(url: string) {
   return url.includes("placehold.co");
 }
 
-export function PlugCard({ plug, onVote, isVoting }: PlugCardProps) {
+export function PlugDirectoryCard({
+  plug,
+  onReliabilityVote,
+  isCastingVote,
+}: PlugDirectoryCardProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const photos =
+  const outletPhotos =
     plug.imageUrls?.length > 0 ? plug.imageUrls : [plug.imageUrl];
-  const thumb = photos[0];
+  const thumb = outletPhotos[0];
   const showPlaceholder = isPlaceholder(thumb);
 
   const metaParts = [plug.building.code, plug.wing, plug.floor].filter(
@@ -54,7 +58,7 @@ export function PlugCard({ plug, onVote, isVoting }: PlugCardProps) {
       <article className="rounded-xl border border-border bg-card p-4 transition-transform active:scale-[0.99]">
         <div className="flex items-start gap-3">
           <div
-            className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted font-mono text-xs font-semibold text-muted-foreground"
+            className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-muted font-mono text-xs font-semibold text-muted-foreground"
             aria-hidden
           >
             {buildingInitials(plug.building.code)}
@@ -86,8 +90,8 @@ export function PlugCard({ plug, onVote, isVoting }: PlugCardProps) {
               setLightboxIndex(0);
               setLightboxOpen(true);
             }}
-            className="relative block size-11 shrink-0 overflow-hidden rounded-lg border border-border bg-muted transition-colors hover:bg-muted/80"
-            aria-label={`View ${photos.length} photo(s) of outlet at ${plug.exactLocation}`}
+            className="relative block size-11 shrink-0 overflow-hidden rounded-xl border border-border bg-muted transition-colors hover:bg-muted/80"
+            aria-label={`View ${outletPhotos.length} photo(s) of outlet at ${plug.exactLocation}`}
           >
             {showPlaceholder ? (
               <span className="flex size-full items-center justify-center text-muted-foreground">
@@ -103,20 +107,20 @@ export function PlugCard({ plug, onVote, isVoting }: PlugCardProps) {
                 unoptimized
               />
             )}
-            {photos.length > 1 && (
+            {outletPhotos.length > 1 && (
               <span className="absolute bottom-0.5 right-0.5 rounded bg-foreground/75 px-1 py-px font-mono text-[9px] text-background">
-                +{photos.length - 1}
+                +{outletPhotos.length - 1}
               </span>
             )}
           </button>
         </div>
 
-        {onVote && (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
+        {onReliabilityVote && (
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <button
             type="button"
-            disabled={isVoting}
-            onClick={() => onVote(plug.id, "up")}
+            disabled={isCastingVote}
+            onClick={() => onReliabilityVote(plug.id, "up")}
             className={cn(
               "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
               userVote === "up"
@@ -130,8 +134,8 @@ export function PlugCard({ plug, onVote, isVoting }: PlugCardProps) {
           </button>
           <button
             type="button"
-            disabled={isVoting}
-            onClick={() => onVote(plug.id, "down")}
+            disabled={isCastingVote}
+            onClick={() => onReliabilityVote(plug.id, "down")}
             className={cn(
               "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50",
               userVote === "down"
@@ -148,7 +152,7 @@ export function PlugCard({ plug, onVote, isVoting }: PlugCardProps) {
       </article>
 
       <ImageLightbox
-        images={photos}
+        images={outletPhotos}
         alt={`Outlet at ${plug.exactLocation}`}
         open={lightboxOpen}
         onClose={() => setLightboxOpen(false)}

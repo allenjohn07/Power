@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * Main plug feed — relational filters + crowdsourced reliability votes.
+ * URL-synced buildingId; "Near me" uses saved building + schematic proximity.
+ */
+
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -9,7 +14,10 @@ import { Plus, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { BuildingPicker, type BuildingOption } from "@/components/BuildingPicker";
-import { PlugCard, type PlugWithBuilding } from "@/components/PlugCard";
+import {
+  PlugDirectoryCard,
+  type PlugPointWithBuilding,
+} from "@/components/PlugDirectoryCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -55,7 +63,7 @@ export default function HomeFeed() {
 
   const [buildings, setBuildings] = useState<Building[]>([]);
   const [mapPositions, setMapPositions] = useState<MapPosition[]>([]);
-  const [plugs, setPlugs] = useState<PlugWithBuilding[]>([]);
+  const [plugPointFeed, setPlugPointFeed] = useState<PlugPointWithBuilding[]>([]);
   const [buildingId, setBuildingId] = useState("");
   const [floor, setFloor] = useState("");
   const [wing, setWing] = useState("");
@@ -106,8 +114,8 @@ export default function HomeFeed() {
     fetchJson<Building[]>("/api/buildings?campus=main", {
       signal: ac.signal,
     })
-      .then((data) => {
-        if (Array.isArray(data)) setBuildings(data);
+      .then((campusBuildings) => {
+        if (Array.isArray(campusBuildings)) setBuildings(campusBuildings);
       })
       .catch((err) => {
         if (ac.signal.aborted) return;
@@ -139,7 +147,7 @@ export default function HomeFeed() {
     return new Set(nearbyBuildingIds(mapPositions, currentBuilding.id));
   }, [mapPositions, currentBuilding]);
 
-  const fetchPlugs = useCallback(
+  const loadPlugPointFeed = useCallback(
     async (signal: AbortSignal) => {
       setLoading(true);
       setError(null);
@@ -152,15 +160,15 @@ export default function HomeFeed() {
       }
 
       try {
-        const data = await fetchJson<PlugWithBuilding[]>(
+        const feed = await fetchJson<PlugPointWithBuilding[]>(
           `/api/plugs?${params.toString()}`,
           { signal },
         );
-        if (!signal.aborted) setPlugs(data);
+        if (!signal.aborted) setPlugPointFeed(feed);
       } catch (err) {
         if (signal.aborted) return;
         setError("Could not load plugs. Is the database running?");
-        setPlugs([]);
+        setPlugPointFeed([]);
       } finally {
         if (!signal.aborted) setLoading(false);
       }
@@ -174,10 +182,10 @@ export default function HomeFeed() {
     if (quickFilter !== "near" && !browseAll && !buildingId) return;
 
     const ac = new AbortController();
-    void fetchPlugs(ac.signal);
+    void loadPlugPointFeed(ac.signal);
     return () => ac.abort();
   }, [
-    fetchPlugs,
+    loadPlugPointFeed,
     locationReady,
     buildings.length,
     browseAll,
@@ -186,10 +194,10 @@ export default function HomeFeed() {
     currentBuilding,
   ]);
 
-  const displayPlugs = useMemo(() => {
-    if (quickFilter !== "near" || !currentBuilding) return plugs;
-    return plugs.filter((p) => nearbyIds.has(p.buildingId));
-  }, [plugs, quickFilter, currentBuilding, nearbyIds]);
+  const visiblePlugPoints = useMemo(() => {
+    if (quickFilter !== "near" || !currentBuilding) return plugPointFeed;
+    return plugPointFeed.filter((p) => nearbyIds.has(p.buildingId));
+  }, [plugPointFeed, quickFilter, currentBuilding, nearbyIds]);
 
   const filterSummary = useMemo(() => {
     const parts: string[] = [];
@@ -222,7 +230,7 @@ export default function HomeFeed() {
     router.replace("/?browse=all", { scroll: false });
   };
 
-  const handleVote = async (id: number, vote: "up" | "down") => {
+  const castPlugReliabilityVote = async (id: number, vote: "up" | "down") => {
     if (!session?.user) {
       router.push("/account");
       return;
@@ -241,7 +249,7 @@ export default function HomeFeed() {
         return;
       }
       if (!res.ok) throw new Error();
-      setPlugs((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      setPlugPointFeed((prev) => prev.map((p) => (p.id === id ? updated : p)));
       toast.success(
         vote === "up" ? "Marked as working" : "Marked as broken",
       );
@@ -329,7 +337,11 @@ export default function HomeFeed() {
                   {feedSubtitle}
                 </p>
               </div>
-              <Button size="sm" className="shrink-0 rounded-full px-4" asChild>
+              <Button
+                size="sm"
+                className="shrink-0 rounded-xl bg-primary px-4 font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+                asChild
+              >
                 <Link href={addHref}>
                   <Plus className="size-4" />
                   Add plug
@@ -496,7 +508,7 @@ export default function HomeFeed() {
 
                   <Button
                     type="button"
-                    className="w-full"
+                    className="w-full rounded-xl bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
                     onClick={() => setFilterSheetOpen(false)}
                   >
                     Show results
@@ -528,7 +540,7 @@ export default function HomeFeed() {
           <p className="mt-3 pt-1 pb-2 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
             {loading
               ? "Loading"
-              : `${displayPlugs.length} plug${displayPlugs.length === 1 ? "" : "s"}`}
+              : `${visiblePlugPoints.length} plug${visiblePlugPoints.length === 1 ? "" : "s"}`}
           </p>
         </div>
       </header>
@@ -547,7 +559,7 @@ export default function HomeFeed() {
           <div className="flex items-center justify-center py-16">
             <div className="size-8 animate-spin rounded-full border-2 border-border border-t-primary" />
           </div>
-        ) : displayPlugs.length === 0 ? (
+        ) : visiblePlugPoints.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border bg-card px-6 py-12 text-center">
             <p className="text-sm font-medium text-foreground">No plugs found</p>
             <p className="text-xs text-muted-foreground">
@@ -562,12 +574,12 @@ export default function HomeFeed() {
           </div>
         ) : (
           <ul className="flex flex-col gap-2.5 pt-2" aria-label="Plug feed">
-            {displayPlugs.map((plug) => (
+            {visiblePlugPoints.map((plug) => (
               <li key={plug.id}>
-                <PlugCard
+                <PlugDirectoryCard
                   plug={plug}
-                  onVote={handleVote}
-                  isVoting={votingId === plug.id}
+                  onReliabilityVote={castPlugReliabilityVote}
+                  isCastingVote={votingId === plug.id}
                 />
               </li>
             ))}

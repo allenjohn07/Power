@@ -1,3 +1,9 @@
+/**
+ * Client-side "you are here" — no indoor GPS.
+ * Students self-report which building they're in; the feed and map use this
+ * for default filters and schematic "near me" proximity.
+ */
+
 export type CurrentBuilding = {
   id: number;
   code: string;
