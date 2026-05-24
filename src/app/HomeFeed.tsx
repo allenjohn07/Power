@@ -11,7 +11,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { Plus, SlidersHorizontal } from "lucide-react";
-import { toast } from "sonner";
 import { AppShell } from "@/components/AppShell";
 import { BuildingPicker, type BuildingOption } from "@/components/BuildingPicker";
 import {
@@ -250,11 +249,6 @@ export default function HomeFeed() {
       }
       if (!res.ok) throw new Error();
       setPlugPointFeed((prev) => prev.map((p) => (p.id === id ? updated : p)));
-      toast.success(
-        vote === "up" ? "Marked as working" : "Marked as broken",
-      );
-    } catch {
-      toast.error("Vote failed. Please try again.");
     } finally {
       setVotingId(null);
     }

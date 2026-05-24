@@ -82,11 +82,6 @@ function AccountSignedIn({ username }: { username: string }) {
         });
         return { ...prev, votes: nextVotes };
       });
-      toast.success(
-        vote === "up" ? "Marked as working" : "Marked as broken",
-      );
-    } catch {
-      toast.error("Vote failed. Please try again.");
     } finally {
       setVotingId(null);
     }
