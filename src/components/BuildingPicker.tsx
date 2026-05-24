@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { Check, ChevronDown, Search } from "lucide-react";
+import { springs } from "@/lib/springs";
 import { cn } from "@/lib/utils";
 
 export type BuildingOption = {
@@ -63,23 +65,31 @@ export function BuildingPicker({
 
   return (
     <div ref={rootRef} className={cn("relative w-full max-w-sm", className)}>
-      <button
+      <motion.button
         type="button"
+        whileTap={{ scale: 0.95 }}
+        transition={springs.snappy}
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="listbox"
         className={cn(
-          "flex w-full items-center gap-2 rounded-full border border-border bg-muted px-3 py-2.5 text-left transition-colors hover:bg-muted/80 active:scale-[0.99]",
+          "flex w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-2.5 text-left transition-colors hover:bg-muted/60",
           open && "ring-2 ring-ring ring-offset-2 ring-offset-background",
         )}
       >
-        <span
-          className={cn(
-            "size-2 shrink-0 rounded-full",
-            value ? "bg-emerald-500" : "bg-muted-foreground/40",
-          )}
-          aria-hidden
-        />
+        {value ? (
+          <motion.span
+            className="size-2 shrink-0 rounded-full bg-emerald-500"
+            animate={{ scale: [1, 1.3, 1], opacity: [1, 0.7, 1] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            aria-hidden
+          />
+        ) : (
+          <span
+            className="size-2 shrink-0 rounded-full bg-muted-foreground/40"
+            aria-hidden
+          />
+        )}
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
           {value?.name ?? placeholder}
         </span>
@@ -95,12 +105,15 @@ export function BuildingPicker({
           )}
           aria-hidden
         />
-      </button>
+      </motion.button>
 
       {open && (
-        <div
+        <motion.div
           role="listbox"
           aria-label="Choose a building"
+          initial={{ opacity: 0, y: -8, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={springs.soft}
           className="absolute top-[calc(100%+0.5rem)] z-50 flex w-full min-w-[min(100vw-2rem,20rem)] flex-col overflow-hidden rounded-xl border border-border bg-popover shadow-lg sm:min-w-full"
         >
           <div className="border-b border-border p-2">
@@ -122,10 +135,12 @@ export function BuildingPicker({
               const selected = value?.id === b.id;
               return (
                 <li key={b.id}>
-                  <button
+                  <motion.button
                     type="button"
                     role="option"
                     aria-selected={selected}
+                    whileTap={{ scale: 0.98 }}
+                    transition={springs.snappy}
                     onClick={() => {
                       onSelect(b);
                       setOpen(false);
@@ -149,7 +164,7 @@ export function BuildingPicker({
                     {selected && (
                       <Check className="size-4 shrink-0 text-foreground" />
                     )}
-                  </button>
+                  </motion.button>
                 </li>
               );
             })}
@@ -159,7 +174,7 @@ export function BuildingPicker({
               </li>
             )}
           </ul>
-        </div>
+        </motion.div>
       )}
     </div>
   );

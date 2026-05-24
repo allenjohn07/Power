@@ -45,9 +45,9 @@ export function LoginForm() {
   };
 
   return (
-    <Card>
+    <Card className="rounded-xl border-border shadow-none">
       <CardHeader>
-        <CardTitle>Log in</CardTitle>
+        <CardTitle className="tracking-tight">Log in</CardTitle>
         <CardDescription>
           Sign in to vote on plugs and track what works.
         </CardDescription>

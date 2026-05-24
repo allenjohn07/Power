@@ -10,7 +10,12 @@ export function filterChipClass(active: boolean) {
   return cn(
     "shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
     active
-      ? "border-primary bg-primary text-primary-foreground hover:border-primary hover:bg-primary/90 hover:text-primary-foreground"
-      : "border-border bg-background text-foreground hover:border-border hover:bg-muted hover:text-foreground",
+      ? "border-foreground/25 bg-muted text-foreground"
+      : "border-border bg-card text-muted-foreground hover:border-foreground/15 hover:text-foreground",
   );
+}
+
+/** Section labels — feed, account, forms. */
+export function sectionLabelClass() {
+  return "text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground";
 }
