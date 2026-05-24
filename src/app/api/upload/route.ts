@@ -3,7 +3,7 @@ import { MAX_PLUG_PHOTOS } from "@/lib/plug-images";
 import { saveUploadedImage } from "@/lib/upload-image";
 
 /**
- * POST — Persist outlet evidence photos to local disk (public/uploads/plugs).
+ * POST — Persist outlet evidence photos to Vercel Blob (or local disk in dev).
  *
  * We accept multipart files here and return URLs for the plug POST handler.
  * Separating upload from creation avoids huge JSON bodies and keeps Prisma

@@ -72,6 +72,6 @@ model PlugImage {
   id        Int    @id @default(autoincrement())
   plugId    Int
   sortOrder Int    @default(0)
-  url       String // /uploads/plugs/... after POST /api/upload
+  url       String // Blob URL or /uploads/plugs/... after POST /api/upload
   plug      Plug   @relation(fields: [plugId], references: [id], onDelete: Cascade)
 }
