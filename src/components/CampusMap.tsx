@@ -117,6 +117,8 @@ export function CampusMap({
     midpoint: { x: number; y: number };
   } | null>(null);
   const didGestureRef = useRef(false);
+  const pointerDownTargetRef = useRef<Element | null>(null);
+  const pointerStartClientRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     transformRef.current = { scale, offset };
@@ -225,33 +227,6 @@ export function CampusMap({
   }, [youAreHere, youAreHereId, svgHtml, applyBuildingStyles]);
 
   useEffect(() => {
-    const host = svgHostRef.current;
-    if (!host) return;
-
-    const onBuildingPinClick = (e: MouseEvent) => {
-      if (didGestureRef.current) {
-        didGestureRef.current = false;
-        return;
-      }
-
-      const target = (e.target as Element).closest<SVGElement>(
-        ".building-interactive",
-      );
-      if (!target?.id) return;
-
-      const matches = buildings.filter((b) =>
-        svgIdsForMapBuilding(b).includes(target.id),
-      );
-      const match =
-        matches.find((b) => b.mapSvgId === target.id) ?? matches[0];
-      if (match) onSelect?.(match);
-    };
-
-    host.addEventListener("click", onBuildingPinClick);
-    return () => host.removeEventListener("click", onBuildingPinClick);
-  }, [buildings, onSelect, svgHtml]);
-
-  useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
 
@@ -289,10 +264,20 @@ export function CampusMap({
       );
     };
 
+    const selectBuildingFromTarget = (target: Element | null) => {
+      const el = target?.closest<SVGElement>("[data-building-id]");
+      const id = el?.getAttribute("data-building-id");
+      if (!id) return;
+      const match = buildings.find((b) => String(b.id) === id);
+      if (match) onSelect?.(match);
+    };
+
     const onPointerDown = (e: PointerEvent) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
 
       didGestureRef.current = false;
+      pointerDownTargetRef.current = e.target as Element;
+      pointerStartClientRef.current = { x: e.clientX, y: e.clientY };
       const focal = focalFromClient(viewport, e.clientX, e.clientY);
       pointersRef.current.set(e.pointerId, focal);
       viewport.setPointerCapture(e.pointerId);
@@ -354,14 +339,14 @@ export function CampusMap({
 
       if (!panRef.current) return;
 
+      const start = pointerStartClientRef.current;
+      if (start) {
+        const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
+        if (moved > PAN_THRESHOLD_PX) didGestureRef.current = true;
+      }
+
       const deltaX = focal.x - panRef.current.lastX;
       const deltaY = focal.y - panRef.current.lastY;
-      if (
-        Math.abs(deltaX) > PAN_THRESHOLD_PX ||
-        Math.abs(deltaY) > PAN_THRESHOLD_PX
-      ) {
-        didGestureRef.current = true;
-      }
 
       panRef.current = { lastX: focal.x, lastY: focal.y };
       const current = transformRef.current;
@@ -375,6 +360,9 @@ export function CampusMap({
     };
 
     const onPointerEnd = (e: PointerEvent) => {
+      const wasGesture = didGestureRef.current;
+      const downTarget = pointerDownTargetRef.current;
+
       pointersRef.current.delete(e.pointerId);
       try {
         viewport.releasePointerCapture(e.pointerId);
@@ -390,8 +378,14 @@ export function CampusMap({
         panRef.current = { lastX: point.x, lastY: point.y };
         pinchRef.current = null;
       } else {
+        if (!wasGesture) {
+          selectBuildingFromTarget(downTarget);
+        }
         panRef.current = null;
         pinchRef.current = null;
+        pointerDownTargetRef.current = null;
+        pointerStartClientRef.current = null;
+        didGestureRef.current = false;
       }
     };
 
@@ -408,7 +402,7 @@ export function CampusMap({
       viewport.removeEventListener("pointerup", onPointerEnd);
       viewport.removeEventListener("pointercancel", onPointerEnd);
     };
-  }, []);
+  }, [buildings, onSelect]);
 
   if (svgError) {
     return (
@@ -469,56 +463,6 @@ export function CampusMap({
             className="campus-map-svg w-[1023px] max-w-none"
           />
         </div>
-      </div>
-
-      <div
-        className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        role="list"
-        aria-label="Buildings"
-      >
-        {buildings.map((b) => {
-          const active = b.id === selectedId;
-          const isHere = b.id === youAreHereId;
-          const count = b.plugCount ?? 0;
-          return (
-            <button
-              key={b.id}
-              type="button"
-              role="listitem"
-              onClick={() => onSelect?.(b)}
-              className={`flex shrink-0 flex-col rounded-xl border px-4 py-2 text-left transition-colors active:scale-[0.99] ${
-                isHere
-                  ? "border-foreground bg-foreground text-background"
-                  : active
-                    ? "border-foreground bg-muted text-foreground"
-                    : "border-border bg-card text-foreground hover:bg-muted/80"
-              }`}
-            >
-              <span className="flex items-center gap-1 text-xs font-bold">
-                {b.code}
-                {isHere && (
-                  <span className="rounded bg-red-500/90 px-1 py-px text-[9px] font-semibold uppercase">
-                    Here
-                  </span>
-                )}
-              </span>
-              <span className="max-w-[120px] truncate text-xs font-medium">
-                {b.name}
-              </span>
-              {count > 0 && (
-                <span
-                  className={`mt-0.5 text-[10px] ${
-                    isHere || active
-                      ? "text-background/80"
-                      : "text-emerald-800 dark:text-emerald-400"
-                  }`}
-                >
-                  {count} plug{count === 1 ? "" : "s"}
-                </span>
-              )}
-            </button>
-          );
-        })}
       </div>
 
       {selected && (
