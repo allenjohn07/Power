@@ -145,7 +145,7 @@ export default function HomeFeed() {
   }, []);
 
   useEffect(() => {
-    if (buildings.length === 0) return;
+    if (buildings.length === 0 || quickFilter !== "near") return;
     const ac = new AbortController();
     resolveBuildingPositions(buildings)
       .then((positions) => {
@@ -155,7 +155,7 @@ export default function HomeFeed() {
         if (!ac.signal.aborted) setMapPositions([]);
       });
     return () => ac.abort();
-  }, [buildings]);
+  }, [buildings, quickFilter]);
 
   const selectedBuilding = useMemo(
     () => buildings.find((b) => String(b.id) === buildingId),
