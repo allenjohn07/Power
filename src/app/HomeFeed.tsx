@@ -89,10 +89,14 @@ export default function HomeFeed() {
 
     const fromUrl = searchParams.get("buildingId");
     const browseAllUrl = searchParams.get("browse") === "all";
+    const floorUrl = searchParams.get("floor");
+    const wingUrl = searchParams.get("wing");
 
     if (browseAllUrl) {
       setBrowseAll(true);
       setBuildingId("");
+      setFloor("");
+      setWing("");
       filtersInitialized.current = true;
       return;
     }
@@ -102,11 +106,17 @@ export default function HomeFeed() {
       if (fromUrl) {
         setBuildingId(fromUrl);
         setBrowseAll(false);
+        setFloor(floorUrl ?? "");
+        setWing(wingUrl ?? "");
       } else if (currentBuilding) {
         setBuildingId(String(currentBuilding.id));
         setBrowseAll(false);
+        setFloor("");
+        setWing("");
       } else {
         setBrowseAll(true);
+        setFloor("");
+        setWing("");
       }
       return;
     }
@@ -114,6 +124,8 @@ export default function HomeFeed() {
     if (fromUrl) {
       setBuildingId(fromUrl);
       setBrowseAll(false);
+      setFloor(floorUrl ?? "");
+      setWing(wingUrl ?? "");
     }
   }, [locationReady, buildings.length, currentBuilding, searchParams]);
 
@@ -324,7 +336,7 @@ export default function HomeFeed() {
 
             <BuildingPicker
               buildings={buildings}
-              value={currentBuilding}
+              value={browseAll ? null : selectedBuilding ?? currentBuilding}
               onSelect={handleBuildingPick}
               className="mt-3 w-full max-w-none"
             />

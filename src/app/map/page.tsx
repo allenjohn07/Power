@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { BuildingPicker } from "@/components/BuildingPicker";
 import { CampusMap, type MapBuilding } from "@/components/CampusMap";
 import type { PlugPointWithBuilding } from "@/components/PlugDirectoryCard";
 import { useCurrentBuilding } from "@/hooks/useCurrentBuilding";
@@ -13,6 +12,13 @@ type BuildingApi = {
   name: string;
   campus: string;
   mapSvgId?: string | null;
+  wingsList?: string[];
+  floorOptions?: string[];
+};
+
+type BuildingFilterOption = {
+  label: string;
+  href: string;
 };
 
 export default function MapPage() {
@@ -94,6 +100,39 @@ export default function MapPage() {
   );
 
   const totalPlugs = campusPlugPoints.length;
+  const selectedFilterOptions: BuildingFilterOption[] = useMemo(() => {
+    if (!selectedId) return [];
+    const selectedBuilding = buildings.find((b) => b.id === selectedId);
+    if (!selectedBuilding) return [];
+
+    const options: BuildingFilterOption[] = [];
+    const floorOptions = selectedBuilding.floorOptions ?? [];
+    const wingOptions = selectedBuilding.wingsList ?? [];
+
+    for (const floor of floorOptions) {
+      const params = new URLSearchParams({
+        buildingId: String(selectedId),
+        floor,
+      });
+      options.push({
+        label: `Floor ${floor}`,
+        href: `/?${params.toString()}`,
+      });
+    }
+
+    for (const wing of wingOptions) {
+      const params = new URLSearchParams({
+        buildingId: String(selectedId),
+        wing,
+      });
+      options.push({
+        label: `Wing ${wing}`,
+        href: `/?${params.toString()}`,
+      });
+    }
+
+    return options.slice(0, 10);
+  }, [selectedId, buildings]);
 
   return (
     <AppShell>
@@ -106,12 +145,6 @@ export default function MapPage() {
             {totalPlugs} plug{totalPlugs === 1 ? "" : "s"} · tap a building to
             explore
           </p>
-          <BuildingPicker
-            buildings={buildings}
-            value={currentBuilding}
-            onSelect={setAsMyLocation}
-            className="mt-3"
-          />
         </header>
 
         <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">
@@ -127,8 +160,11 @@ export default function MapPage() {
               buildings={mapBuildings}
               selectedId={selectedId}
               youAreHereId={youAreHereBuilding?.id ?? null}
-              onSelect={(b) => setSelectedId(b.id)}
+              onSelect={(b) => {
+                setSelectedId(b.id);
+              }}
               onSetLocation={setAsMyLocation}
+              selectedFilterOptions={selectedFilterOptions}
             />
           )}
         </main>

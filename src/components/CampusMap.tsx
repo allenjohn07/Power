@@ -30,6 +30,7 @@ type CampusMapProps = {
   onSelect?: (building: MapBuilding) => void;
   onSetLocation?: (building: MapBuilding) => void;
   onChangeLocation?: () => void;
+  selectedFilterOptions?: { label: string; href: string }[];
 };
 
 const MIN_SCALE = 0.6;
@@ -97,6 +98,7 @@ export function CampusMap({
   onSelect,
   onSetLocation,
   onChangeLocation,
+  selectedFilterOptions = [],
 }: CampusMapProps) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const svgHostRef = useRef<HTMLDivElement>(null);
@@ -557,6 +559,25 @@ export function CampusMap({
               View plugs in {selected.code}
             </Link>
           </div>
+
+          {selectedFilterOptions.length > 0 && (
+            <div className="mt-3">
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Select in {selected.code}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {selectedFilterOptions.map((option) => (
+                  <Link
+                    key={option.href}
+                    href={option.href}
+                    className="inline-flex min-h-9 items-center justify-center rounded-full border border-border bg-muted px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/80"
+                  >
+                    {option.label}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
